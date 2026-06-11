@@ -70,6 +70,7 @@ Per-question fields:
 | `options` | for MC | Array of ≥2 non-empty strings. |
 | `correctAnswer` | yes | MC: must equal one of `options`. TF: `"참"`/`"거짓"` (also accepts `true`/`false`). |
 | `points` | no | Positive number; defaults to `1`. |
+| `imageUrl` | no | External image link (diagram or screenshot of a table) shown with the question. |
 
 ```json
 [

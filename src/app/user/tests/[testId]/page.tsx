@@ -111,6 +111,14 @@ export default function TakeTestPage() {
           <p className="mt-3 text-base font-medium text-slate-900">
             {question.questionText}
           </p>
+          {question.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={question.imageUrl}
+              alt="문제 이미지"
+              className="mt-3 max-h-80 w-auto rounded-md border border-slate-200"
+            />
+          )}
 
           <div className="mt-6 flex items-center justify-between">
             <button

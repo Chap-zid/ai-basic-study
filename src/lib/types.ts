@@ -25,6 +25,9 @@ export interface Question {
   options: string[];
   correctAnswer: string;
   points: number;
+  // Optional image (e.g. a diagram or a screenshot of a table) shown with the
+  // question. Stored as an external URL; omitted entirely when not used.
+  imageUrl?: string;
 }
 
 export interface Test {

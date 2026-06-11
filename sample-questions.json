@@ -23,5 +23,13 @@
     "options": ["정확도(Accuracy)", "정밀도(Precision)", "재현율(Recall)", "평균제곱오차(MSE)"],
     "correctAnswer": "평균제곱오차(MSE)",
     "points": 3
+  },
+  {
+    "questionText": "아래 표에서 재현율이 가장 높은 모델은? (표는 이미지로 첨부)",
+    "type": "multiple-choice",
+    "options": ["모델 A", "모델 B", "모델 C"],
+    "correctAnswer": "모델 C",
+    "points": 3,
+    "imageUrl": "https://i.imgur.com/your-image.png"
   }
 ]

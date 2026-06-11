@@ -110,6 +110,14 @@ export default function TestResultPage() {
                   ({earnedPoints} / {questionPoints}점)
                 </span>
               </p>
+              {question.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={question.imageUrl}
+                  alt="문제 이미지"
+                  className="mt-2 max-h-72 w-auto rounded-md border border-slate-200"
+                />
+              )}
               <p className="mt-2 text-sm text-slate-700">
                 내 답안:{" "}
                 <span className="font-medium">{given ?? "—"}</span>{" "}

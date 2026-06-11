@@ -26,13 +26,24 @@ const SAMPLE_JSON = `[
     "points": 2
   },
   {
-    "questionText": "다음 중 지도학습(supervised learning) 예시는?",
+    "questionText": "다음 표에서 정확도가 가장 높은 모델은?",
     "type": "multiple-choice",
-    "options": ["군집화", "분류", "차원 축소", "연관 규칙"],
-    "correctAnswer": "분류",
-    "points": 3
+    "options": ["모델 A", "모델 B", "모델 C"],
+    "correctAnswer": "모델 B",
+    "points": 3,
+    "imageUrl": "https://i.imgur.com/예시.png"
   }
 ]`;
+
+// True for non-empty http(s) URLs.
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 // Maps loose true/false values onto the app's stored "참"/"거짓".
 function normalizeBool(value: unknown): string | null {
@@ -107,6 +118,17 @@ function parseQuestionsJson(text: string): ParseResult {
       points = p;
     }
 
+    let imageUrl: string | undefined;
+    if (item.imageUrl !== undefined && item.imageUrl !== "") {
+      if (typeof item.imageUrl !== "string" || !isHttpUrl(item.imageUrl.trim())) {
+        return {
+          ok: false,
+          error: `${label}: imageUrl은 http:// 또는 https:// 로 시작하는 링크여야 합니다.`,
+        };
+      }
+      imageUrl = item.imageUrl.trim();
+    }
+
     const hasOptions = Array.isArray(item.options) && item.options.length > 0;
     const type: QuestionType =
       item.type === "true-false"
@@ -138,7 +160,14 @@ function parseQuestionsJson(text: string): ParseResult {
           error: `${label}: correctAnswer(정답)가 options 중 하나와 정확히 일치해야 합니다.`,
         };
       }
-      questions.push({ questionText, type, options, correctAnswer, points });
+      questions.push({
+        questionText,
+        type,
+        options,
+        correctAnswer,
+        points,
+        ...(imageUrl ? { imageUrl } : {}),
+      });
     } else {
       const correctAnswer = normalizeBool(item.correctAnswer);
       if (!correctAnswer) {
@@ -153,6 +182,7 @@ function parseQuestionsJson(text: string): ParseResult {
         options: ["참", "거짓"],
         correctAnswer,
         points,
+        ...(imageUrl ? { imageUrl } : {}),
       });
     }
   }
@@ -178,6 +208,7 @@ export default function AdminTestsPage() {
   const [correctIndex, setCorrectIndex] = useState(0);
   const [correctBool, setCorrectBool] = useState("참");
   const [points, setPoints] = useState("1");
+  const [imageUrl, setImageUrl] = useState("");
   const [questionError, setQuestionError] = useState<string | null>(null);
 
   // Bulk JSON import.
@@ -207,6 +238,7 @@ export default function AdminTestsPage() {
     setCorrectIndex(0);
     setCorrectBool("참");
     setPoints("1");
+    setImageUrl("");
     setQuestionError(null);
   }
 
@@ -236,6 +268,14 @@ export default function AdminTestsPage() {
       return;
     }
 
+    const trimmedImage = imageUrl.trim();
+    if (trimmedImage && !isHttpUrl(trimmedImage)) {
+      setQuestionError("이미지 링크는 http:// 또는 https:// 로 시작해야 합니다.");
+      return;
+    }
+    // Conditionally included so Firestore never receives an undefined field.
+    const imageField = trimmedImage ? { imageUrl: trimmedImage } : {};
+
     if (questionType === "multiple-choice") {
       const trimmed = options.map((o) => o.trim());
       const cleaned = trimmed.filter(Boolean);
@@ -256,6 +296,7 @@ export default function AdminTestsPage() {
           options: cleaned,
           correctAnswer,
           points: pointsValue,
+          ...imageField,
         },
       ]);
     } else {
@@ -267,6 +308,7 @@ export default function AdminTestsPage() {
           options: ["참", "거짓"],
           correctAnswer: correctBool,
           points: pointsValue,
+          ...imageField,
         },
       ]);
     }
@@ -499,6 +541,27 @@ export default function AdminTestsPage() {
             <span className="ml-2 text-sm text-slate-500">점</span>
           </div>
 
+          <div className="mt-3">
+            <label
+              htmlFor="question-image"
+              className="block text-sm font-medium text-slate-700"
+            >
+              이미지 링크 (선택)
+            </label>
+            <input
+              id="question-image"
+              type="url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://i.imgur.com/예시.png"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              그림이나 표 캡처 이미지를 imgur 등에 올린 뒤 링크를 붙여넣으면 문제에
+              함께 표시됩니다.
+            </p>
+          </div>
+
           {questionError && (
             <p className="mt-2 text-sm text-red-600">{questionError}</p>
           )}
@@ -534,7 +597,8 @@ export default function AdminTestsPage() {
             문제 배열 또는{" "}
             <code className="rounded bg-slate-200 px-1">{"{ \"questions\": [...] }"}</code>{" "}
             형식을 붙여넣으세요. 각 문제: questionText(필수), type(생략 시 자동),
-            options(객관식), correctAnswer(필수), points(생략 시 1).
+            options(객관식), correctAnswer(필수), points(생략 시 1),
+            imageUrl(선택).
           </p>
           <textarea
             value={jsonText}
@@ -581,6 +645,7 @@ export default function AdminTestsPage() {
                         ? "객관식"
                         : "참 / 거짓"}{" "}
                       · 정답: {question.correctAnswer} · 배점 {question.points}점
+                      {question.imageUrl ? " · 🖼 이미지" : ""}
                     </p>
                   </div>
                   <button
