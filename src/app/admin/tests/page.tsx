@@ -17,6 +17,149 @@ import type { Question, QuestionType, Test } from "@/lib/types";
 
 const EMPTY_OPTIONS = ["", ""];
 
+// Example pasted into the JSON box by the "예시 채우기" button.
+const SAMPLE_JSON = `[
+  {
+    "questionText": "머신러닝은 데이터에서 패턴을 학습한다.",
+    "type": "true-false",
+    "correctAnswer": "참",
+    "points": 2
+  },
+  {
+    "questionText": "다음 중 지도학습(supervised learning) 예시는?",
+    "type": "multiple-choice",
+    "options": ["군집화", "분류", "차원 축소", "연관 규칙"],
+    "correctAnswer": "분류",
+    "points": 3
+  }
+]`;
+
+// Maps loose true/false values onto the app's stored "참"/"거짓".
+function normalizeBool(value: unknown): string | null {
+  if (typeof value === "boolean") return value ? "참" : "거짓";
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (["참", "true", "t", "o", "yes", "y", "1"].includes(v)) return "참";
+    if (["거짓", "false", "f", "x", "no", "n", "0"].includes(v)) return "거짓";
+  }
+  return null;
+}
+
+type ParseResult =
+  | { ok: true; questions: Question[] }
+  | { ok: false; error: string };
+
+// Parses pasted JSON into validated Question objects. Accepts either a bare
+// array of questions or an object with a "questions" array.
+function parseQuestionsJson(text: string): ParseResult {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "JSON 형식이 올바르지 않습니다. 문법을 확인해 주세요." };
+  }
+
+  let rawList: unknown[] | null = null;
+  if (Array.isArray(data)) {
+    rawList = data;
+  } else if (
+    data &&
+    typeof data === "object" &&
+    Array.isArray((data as { questions?: unknown }).questions)
+  ) {
+    rawList = (data as { questions: unknown[] }).questions;
+  }
+
+  if (!rawList) {
+    return {
+      ok: false,
+      error: "최상위는 문제 배열 또는 questions 필드를 가진 객체여야 합니다.",
+    };
+  }
+  if (rawList.length === 0) {
+    return { ok: false, error: "문제가 하나도 없습니다." };
+  }
+
+  const questions: Question[] = [];
+  for (let i = 0; i < rawList.length; i++) {
+    const raw = rawList[i];
+    const label = `${i + 1}번 문제`;
+    if (!raw || typeof raw !== "object") {
+      return { ok: false, error: `${label}: 객체 형식이 아닙니다.` };
+    }
+    const item = raw as Record<string, unknown>;
+
+    const questionText =
+      typeof item.questionText === "string" ? item.questionText.trim() : "";
+    if (!questionText) {
+      return { ok: false, error: `${label}: questionText(문제 내용)가 필요합니다.` };
+    }
+
+    let points = 1;
+    if (item.points !== undefined) {
+      const p = Number(item.points);
+      if (!Number.isFinite(p) || p <= 0) {
+        return {
+          ok: false,
+          error: `${label}: points(배점)는 1 이상의 숫자여야 합니다.`,
+        };
+      }
+      points = p;
+    }
+
+    const hasOptions = Array.isArray(item.options) && item.options.length > 0;
+    const type: QuestionType =
+      item.type === "true-false"
+        ? "true-false"
+        : item.type === "multiple-choice"
+          ? "multiple-choice"
+          : hasOptions
+            ? "multiple-choice"
+            : "true-false";
+
+    if (type === "multiple-choice") {
+      if (!Array.isArray(item.options)) {
+        return {
+          ok: false,
+          error: `${label}: 객관식은 options(선택지) 배열이 필요합니다.`,
+        };
+      }
+      const options = item.options
+        .map((o) => (typeof o === "string" ? o.trim() : ""))
+        .filter(Boolean);
+      if (options.length < 2) {
+        return { ok: false, error: `${label}: 선택지는 2개 이상이어야 합니다.` };
+      }
+      const correctAnswer =
+        typeof item.correctAnswer === "string" ? item.correctAnswer.trim() : "";
+      if (!correctAnswer || !options.includes(correctAnswer)) {
+        return {
+          ok: false,
+          error: `${label}: correctAnswer(정답)가 options 중 하나와 정확히 일치해야 합니다.`,
+        };
+      }
+      questions.push({ questionText, type, options, correctAnswer, points });
+    } else {
+      const correctAnswer = normalizeBool(item.correctAnswer);
+      if (!correctAnswer) {
+        return {
+          ok: false,
+          error: `${label}: 참/거짓 문제의 correctAnswer는 "참" 또는 "거짓"이어야 합니다.`,
+        };
+      }
+      questions.push({
+        questionText,
+        type,
+        options: ["참", "거짓"],
+        correctAnswer,
+        points,
+      });
+    }
+  }
+
+  return { ok: true, questions };
+}
+
 export default function AdminTestsPage() {
   const { user } = useAuth();
 
@@ -36,6 +179,11 @@ export default function AdminTestsPage() {
   const [correctBool, setCorrectBool] = useState("참");
   const [points, setPoints] = useState("1");
   const [questionError, setQuestionError] = useState<string | null>(null);
+
+  // Bulk JSON import.
+  const [jsonText, setJsonText] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [jsonMessage, setJsonMessage] = useState<string | null>(null);
 
   const [tests, setTests] = useState<Test[]>([]);
   const [saving, setSaving] = useState(false);
@@ -128,6 +276,23 @@ export default function AdminTestsPage() {
 
   function removeQuestion(index: number) {
     setQuestions((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function importQuestionsFromJson() {
+    setJsonError(null);
+    setJsonMessage(null);
+    if (!jsonText.trim()) {
+      setJsonError("JSON을 붙여넣어 주세요.");
+      return;
+    }
+    const result = parseQuestionsJson(jsonText);
+    if (!result.ok) {
+      setJsonError(result.error);
+      return;
+    }
+    setQuestions((prev) => [...prev, ...result.questions]);
+    setJsonText("");
+    setJsonMessage(`${result.questions.length}개 문제를 추가했습니다.`);
   }
 
   async function handleSaveTest(event: React.FormEvent) {
@@ -344,6 +509,53 @@ export default function AdminTestsPage() {
             className="mt-3 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
             문제 추가
+          </button>
+        </div>
+
+        {/* Bulk import via JSON */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-800">
+              JSON으로 문제 가져오기
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setJsonText(SAMPLE_JSON);
+                setJsonError(null);
+                setJsonMessage(null);
+              }}
+              className="text-xs font-medium text-slate-600 hover:text-slate-900"
+            >
+              예시 채우기
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            문제 배열 또는{" "}
+            <code className="rounded bg-slate-200 px-1">{"{ \"questions\": [...] }"}</code>{" "}
+            형식을 붙여넣으세요. 각 문제: questionText(필수), type(생략 시 자동),
+            options(객관식), correctAnswer(필수), points(생략 시 1).
+          </p>
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            rows={6}
+            spellCheck={false}
+            placeholder='[{"questionText": "...", "type": "multiple-choice", "options": ["A","B"], "correctAnswer": "A", "points": 1}]'
+            className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-xs focus:border-slate-500 focus:outline-none"
+          />
+
+          {jsonError && <p className="mt-2 text-sm text-red-600">{jsonError}</p>}
+          {jsonMessage && (
+            <p className="mt-2 text-sm text-green-600">{jsonMessage}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={importQuestionsFromJson}
+            className="mt-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          >
+            JSON 불러오기
           </button>
         </div>
 

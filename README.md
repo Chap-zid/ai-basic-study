@@ -55,6 +55,30 @@ change `role` to `"admin"`. There is no self-service path to admin.
 - `/user/tests/[testId]` — take a test.
 - `/user/tests/[testId]/result` — score and per-question breakdown.
 
+## Bulk question import (JSON)
+
+On `/admin/tests`, the **"JSON으로 문제 가져오기"** box accepts a question array (or
+an object with a `questions` array) and appends the parsed questions to the test
+being built. See `sample-questions.json` for a working example.
+
+Per-question fields:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `questionText` | yes | The question prompt. |
+| `type` | no | `"multiple-choice"` or `"true-false"`. Inferred from `options` if omitted. |
+| `options` | for MC | Array of ≥2 non-empty strings. |
+| `correctAnswer` | yes | MC: must equal one of `options`. TF: `"참"`/`"거짓"` (also accepts `true`/`false`). |
+| `points` | no | Positive number; defaults to `1`. |
+
+```json
+[
+  { "questionText": "...", "type": "true-false", "correctAnswer": "참", "points": 2 },
+  { "questionText": "...", "type": "multiple-choice",
+    "options": ["A", "B"], "correctAnswer": "A", "points": 3 }
+]
+```
+
 ## Data model (Firestore)
 
 - `users/{uid}` — `{ role, email, displayName, createdAt }`

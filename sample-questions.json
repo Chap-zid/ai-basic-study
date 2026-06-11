@@ -1,0 +1,27 @@
+[
+  {
+    "questionText": "머신러닝은 데이터에서 패턴을 학습한다.",
+    "type": "true-false",
+    "correctAnswer": "참",
+    "points": 2
+  },
+  {
+    "questionText": "다음 중 지도학습(supervised learning)의 예시는?",
+    "type": "multiple-choice",
+    "options": ["군집화", "분류", "차원 축소", "연관 규칙 학습"],
+    "correctAnswer": "분류",
+    "points": 3
+  },
+  {
+    "questionText": "과적합(overfitting)은 모델이 학습 데이터에만 지나치게 맞춰진 상태다.",
+    "type": "true-false",
+    "correctAnswer": "참"
+  },
+  {
+    "questionText": "다음 중 분류(classification)에 쓰이는 평가지표가 아닌 것은?",
+    "type": "multiple-choice",
+    "options": ["정확도(Accuracy)", "정밀도(Precision)", "재현율(Recall)", "평균제곱오차(MSE)"],
+    "correctAnswer": "평균제곱오차(MSE)",
+    "points": 3
+  }
+]
