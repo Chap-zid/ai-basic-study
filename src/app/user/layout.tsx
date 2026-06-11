@@ -31,7 +31,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen">
-      <AppHeader title="AI 기초 학습" links={USER_LINKS} />
+      <AppHeader title="인공지능 기초 학습" links={USER_LINKS} />
       <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
     </div>
   );

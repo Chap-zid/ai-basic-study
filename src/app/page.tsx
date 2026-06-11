@@ -32,7 +32,7 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">AI 기초 학습</h1>
+        <h1 className="text-2xl font-bold text-slate-900">인공지능 기초 학습</h1>
         <p className="mt-2 text-sm text-slate-600">
           Google 계정으로 로그인하여 교재와 퀴즈를 이용하세요.
         </p>
