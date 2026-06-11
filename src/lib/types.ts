@@ -40,11 +40,30 @@ export interface Test {
   createdBy: string;
 }
 
+// Per-question record stored with a result, so the breakdown is readable
+// directly in Firestore without cross-referencing the test.
+export interface AnswerDetail {
+  questionText: string;
+  type: QuestionType;
+  given: string | null;
+  correctAnswer: string;
+  isCorrect: boolean;
+  points: number;
+  earnedPoints: number;
+}
+
 export interface TestResult {
   uid: string;
+  // Fields below are optional so results saved before they were added still fit.
+  userName?: string | null;
+  userEmail?: string | null;
   testId: string;
+  testTitle?: string;
   score: number;
   total: number;
+  correctCount?: number;
+  questionCount?: number;
   answers: string[];
+  details?: AnswerDetail[];
   completedAt: Timestamp | null;
 }

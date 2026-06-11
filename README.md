@@ -85,4 +85,8 @@ Per-question fields:
 - `users/{uid}` — `{ role, email, displayName, createdAt }`
 - `textbooks/{id}` — `{ title, storageUrl, uploadedAt, uploadedBy }`
 - `tests/{id}` — `{ title, description, published, questions[], createdAt, createdBy }`
-- `results/{uid}_{testId}` — `{ uid, testId, score, total, answers, completedAt }`
+- `results/{autoId}` — one document **per attempt** (re-taking keeps history):
+  `{ uid, userName, userEmail, testId, testTitle, score, total, correctCount,
+  questionCount, answers, details[], completedAt }`. `details[]` holds a readable
+  per-question breakdown: `{ questionText, type, given, correctAnswer, isCorrect,
+  points, earnedPoints }`.

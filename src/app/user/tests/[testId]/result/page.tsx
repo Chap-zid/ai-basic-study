@@ -81,11 +81,22 @@ export default function TestResultPage() {
       <h1 className="text-2xl font-bold text-slate-900">{test.title} — 결과</h1>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-600">내 점수</p>
+        {result.userName && (
+          <p className="text-sm text-slate-500">응시자: {result.userName}</p>
+        )}
+        <p className="mt-1 text-sm text-slate-600">내 점수</p>
         <p className="mt-1 text-3xl font-bold text-slate-900">
           {result.score} / {result.total}
         </p>
-        <p className="mt-1 text-sm text-slate-500">{percentage}%</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {percentage}%
+          {typeof result.correctCount === "number" && (
+            <>
+              {" · "}맞힌 문항 {result.correctCount} /{" "}
+              {result.questionCount ?? test.questions.length}
+            </>
+          )}
+        </p>
       </div>
 
       <h2 className="mt-8 text-lg font-semibold text-slate-900">문항별 결과</h2>

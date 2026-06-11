@@ -54,26 +54,39 @@ export default function TakeTestPage() {
     setError(null);
     try {
       const finalAnswers = answers as string[];
+      // Build a per-question breakdown so the saved result is self-explanatory.
       // Each question carries its own point value (older tests default to 1).
-      const score = test.questions.reduce(
-        (total, question, index) =>
-          finalAnswers[index] === question.correctAnswer
-            ? total + (question.points ?? 1)
-            : total,
-        0,
-      );
-      const total = test.questions.reduce(
-        (sum, question) => sum + (question.points ?? 1),
-        0,
-      );
+      const details = test.questions.map((question, index) => {
+        const given = finalAnswers[index] ?? null;
+        const isCorrect = given === question.correctAnswer;
+        const points = question.points ?? 1;
+        return {
+          questionText: question.questionText,
+          type: question.type,
+          given,
+          correctAnswer: question.correctAnswer,
+          isCorrect,
+          points,
+          earnedPoints: isCorrect ? points : 0,
+        };
+      });
+      const score = details.reduce((sum, d) => sum + d.earnedPoints, 0);
+      const total = details.reduce((sum, d) => sum + d.points, 0);
+      const correctCount = details.filter((d) => d.isCorrect).length;
 
       // addDoc creates a new record per attempt, so every submission is kept.
       await addDoc(collection(db, "results"), {
         uid: user.uid,
+        userName: user.displayName ?? user.email ?? null,
+        userEmail: user.email ?? null,
         testId: test.id,
+        testTitle: test.title,
         score,
         total,
+        correctCount,
+        questionCount: test.questions.length,
         answers: finalAnswers,
+        details,
         completedAt: serverTimestamp(),
       });
 
