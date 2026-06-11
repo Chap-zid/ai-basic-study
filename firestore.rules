@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Reads the caller's user document to check their role.
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // users/{uid}: a user may read and create only their own document; the role
+    // is forced to "user" on self-creation so nobody can self-promote to admin.
+    // Admins may read every user document. Role changes (-> admin) are done
+    // manually in the Firebase console (admin update/delete only).
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'user';
+      allow update, delete: if isAdmin();
+    }
+
+    // textbooks: any signed-in user may read; only admins may write.
+    match /textbooks/{textbookId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // tests: admins may read/write all; users may read only published tests.
+    match /tests/{testId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.published == true);
+      allow write: if isAdmin();
+    }
+
+    // results: a user may read/write only their own result; admins may read all.
+    match /results/{resultId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (isSignedIn() && resource.data.uid == request.auth.uid);
+    }
+  }
+}
