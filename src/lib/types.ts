@@ -24,6 +24,7 @@ export interface Question {
   type: QuestionType;
   options: string[];
   correctAnswer: string;
+  points: number;
 }
 
 export interface Test {

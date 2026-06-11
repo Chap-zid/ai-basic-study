@@ -34,6 +34,7 @@ export default function AdminTestsPage() {
   const [options, setOptions] = useState<string[]>(EMPTY_OPTIONS);
   const [correctIndex, setCorrectIndex] = useState(0);
   const [correctBool, setCorrectBool] = useState("참");
+  const [points, setPoints] = useState("1");
   const [questionError, setQuestionError] = useState<string | null>(null);
 
   const [tests, setTests] = useState<Test[]>([]);
@@ -57,6 +58,7 @@ export default function AdminTestsPage() {
     setOptions([...EMPTY_OPTIONS]);
     setCorrectIndex(0);
     setCorrectBool("참");
+    setPoints("1");
     setQuestionError(null);
   }
 
@@ -80,6 +82,12 @@ export default function AdminTestsPage() {
       return;
     }
 
+    const pointsValue = Number(points);
+    if (!Number.isFinite(pointsValue) || pointsValue <= 0) {
+      setQuestionError("배점은 1 이상의 숫자여야 합니다.");
+      return;
+    }
+
     if (questionType === "multiple-choice") {
       const trimmed = options.map((o) => o.trim());
       const cleaned = trimmed.filter(Boolean);
@@ -99,6 +107,7 @@ export default function AdminTestsPage() {
           type: "multiple-choice",
           options: cleaned,
           correctAnswer,
+          points: pointsValue,
         },
       ]);
     } else {
@@ -109,6 +118,7 @@ export default function AdminTestsPage() {
           type: "true-false",
           options: ["참", "거짓"],
           correctAnswer: correctBool,
+          points: pointsValue,
         },
       ]);
     }
@@ -306,6 +316,24 @@ export default function AdminTestsPage() {
             </div>
           )}
 
+          <div className="mt-3">
+            <label
+              htmlFor="question-points"
+              className="block text-sm font-medium text-slate-700"
+            >
+              배점
+            </label>
+            <input
+              id="question-points"
+              type="number"
+              min={1}
+              value={points}
+              onChange={(e) => setPoints(e.target.value)}
+              className="mt-1 w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            />
+            <span className="ml-2 text-sm text-slate-500">점</span>
+          </div>
+
           {questionError && (
             <p className="mt-2 text-sm text-red-600">{questionError}</p>
           )}
@@ -323,7 +351,8 @@ export default function AdminTestsPage() {
         {questions.length > 0 && (
           <div>
             <h2 className="text-sm font-semibold text-slate-800">
-              문제 ({questions.length})
+              문제 ({questions.length}) · 총점{" "}
+              {questions.reduce((sum, q) => sum + q.points, 0)}점
             </h2>
             <ol className="mt-2 space-y-2">
               {questions.map((question, index) => (
@@ -339,7 +368,7 @@ export default function AdminTestsPage() {
                       {question.type === "multiple-choice"
                         ? "객관식"
                         : "참 / 거짓"}{" "}
-                      · 정답: {question.correctAnswer}
+                      · 정답: {question.correctAnswer} · 배점 {question.points}점
                     </p>
                   </div>
                   <button

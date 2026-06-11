@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/firebase";
 import { useAuth } from "@/lib/auth-context";
 import type { Test, TestResult } from "@/lib/types";
@@ -20,15 +27,29 @@ export default function TestResultPage() {
   useEffect(() => {
     async function load() {
       if (!user) return;
-      const [testSnap, resultSnap] = await Promise.all([
+      const [testSnap, resultsSnap] = await Promise.all([
         getDoc(doc(db, "tests", testId)),
-        getDoc(doc(db, "results", `${user.uid}_${testId}`)),
+        getDocs(
+          query(
+            collection(db, "results"),
+            where("uid", "==", user.uid),
+            where("testId", "==", testId),
+          ),
+        ),
       ]);
       if (testSnap.exists()) {
         setTest({ id: testSnap.id, ...testSnap.data() } as Test);
       }
-      if (resultSnap.exists()) {
-        setResult(resultSnap.data() as TestResult);
+      // Multiple attempts may exist; show the most recent one. Sorted client-side
+      // so the query needs no composite index.
+      const attempts = resultsSnap.docs.map((d) => d.data() as TestResult);
+      if (attempts.length > 0) {
+        const latest = attempts.reduce((a, b) =>
+          (b.completedAt?.toMillis() ?? 0) > (a.completedAt?.toMillis() ?? 0)
+            ? b
+            : a,
+        );
+        setResult(latest);
       }
       setLoading(false);
     }
@@ -72,6 +93,8 @@ export default function TestResultPage() {
         {test.questions.map((question, index) => {
           const given = result.answers[index];
           const isCorrect = given === question.correctAnswer;
+          const questionPoints = question.points ?? 1;
+          const earnedPoints = isCorrect ? questionPoints : 0;
           return (
             <li
               key={index}
@@ -83,6 +106,9 @@ export default function TestResultPage() {
             >
               <p className="text-sm font-medium text-slate-900">
                 {index + 1}. {question.questionText}
+                <span className="ml-2 font-normal text-slate-500">
+                  ({earnedPoints} / {questionPoints}점)
+                </span>
               </p>
               <p className="mt-2 text-sm text-slate-700">
                 내 답안:{" "}

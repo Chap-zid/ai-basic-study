@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/firebase";
 import { useAuth } from "@/lib/auth-context";
 import type { Test } from "@/lib/types";
@@ -54,17 +54,25 @@ export default function TakeTestPage() {
     setError(null);
     try {
       const finalAnswers = answers as string[];
+      // Each question carries its own point value (older tests default to 1).
       const score = test.questions.reduce(
         (total, question, index) =>
-          finalAnswers[index] === question.correctAnswer ? total + 1 : total,
+          finalAnswers[index] === question.correctAnswer
+            ? total + (question.points ?? 1)
+            : total,
+        0,
+      );
+      const total = test.questions.reduce(
+        (sum, question) => sum + (question.points ?? 1),
         0,
       );
 
-      await setDoc(doc(db, "results", `${user.uid}_${test.id}`), {
+      // addDoc creates a new record per attempt, so every submission is kept.
+      await addDoc(collection(db, "results"), {
         uid: user.uid,
         testId: test.id,
         score,
-        total: test.questions.length,
+        total,
         answers: finalAnswers,
         completedAt: serverTimestamp(),
       });
