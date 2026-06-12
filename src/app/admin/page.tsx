@@ -27,6 +27,15 @@ export default function AdminHomePage() {
             객관식과 참/거짓 문제로 퀴즈를 만들고 게시하세요.
           </p>
         </Link>
+        <Link
+          href="/admin/results"
+          className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-300"
+        >
+          <h2 className="text-lg font-semibold text-slate-900">응시 결과</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            사용자별 점수와 맞은/틀린 문제를 최신순으로 확인하세요.
+          </p>
+        </Link>
       </div>
     </div>
   );

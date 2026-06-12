@@ -8,6 +8,7 @@ import AppHeader from "@/components/AppHeader";
 const ADMIN_LINKS = [
   { href: "/admin/textbooks", label: "교재" },
   { href: "/admin/tests", label: "시험" },
+  { href: "/admin/results", label: "응시 결과" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
