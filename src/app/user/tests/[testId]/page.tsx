@@ -6,6 +6,7 @@ import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/fires
 import { db } from "@/firebase";
 import { useAuth } from "@/lib/auth-context";
 import type { Test } from "@/lib/types";
+import AskAiMock from "@/components/AskAiMock";
 
 export default function TakeTestPage() {
   const { user } = useAuth();
@@ -118,9 +119,32 @@ export default function TakeTestPage() {
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {/* Left: question panel + navigation */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {test.questions.length}문항 중 {currentIndex + 1}번
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {test.questions.length}문항 중 {currentIndex + 1}번
+              </p>
+              {test.experiment && question.phase && (
+                <p
+                  className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                    question.phase === 1
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-indigo-100 text-indigo-700"
+                  }`}
+                >
+                  {question.phase === 1
+                    ? "1차 · 혼자 풀기 (AI 사용 불가)"
+                    : "2차 · AI 자유 사용"}
+                </p>
+              )}
+            </div>
+            {test.experiment && (
+              <AskAiMock
+                enabled={question.phase === 2}
+                questionKey={currentIndex}
+              />
+            )}
+          </div>
           <p className="mt-3 text-base font-medium text-slate-900">
             {question.questionText}
           </p>

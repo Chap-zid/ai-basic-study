@@ -14,6 +14,7 @@ import {
 import { db } from "@/firebase";
 import { useAuth } from "@/lib/auth-context";
 import type { Question, QuestionType, Test } from "@/lib/types";
+import ExperimentTestBuilder from "@/components/ExperimentTestBuilder";
 
 const EMPTY_OPTIONS = ["", ""];
 
@@ -682,6 +683,14 @@ export default function AdminTestsPage() {
         </button>
       </form>
 
+      {user && (
+        <ExperimentTestBuilder
+          tests={tests}
+          createdBy={user.uid}
+          onSaved={loadTests}
+        />
+      )}
+
       <h2 className="mt-10 text-lg font-semibold text-slate-900">
         기존 시험
       </h2>
@@ -697,6 +706,11 @@ export default function AdminTestsPage() {
               <div>
                 <p className="text-sm font-medium text-slate-800">
                   {test.title}
+                  {test.experiment && (
+                    <span className="ml-2 rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">
+                      실험
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-slate-500">
                   {test.questions.length}문항 ·{" "}

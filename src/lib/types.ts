@@ -28,13 +28,24 @@ export interface Question {
   // Optional image (e.g. a diagram or a screenshot of a table) shown with the
   // question. Stored as an external URL; omitted entirely when not used.
   imageUrl?: string;
+  // Experiment-only fields (see Test.experiment). phase 1 = solve alone,
+  // phase 2 = AI use allowed. Omitted on regular tests.
+  phase?: ExperimentPhase;
+  difficulty?: Difficulty;
+  // Title of the test the question was copied from, for traceability.
+  sourceTestTitle?: string;
 }
+
+export type ExperimentPhase = 1 | 2;
+export type Difficulty = "하" | "중" | "상";
 
 export interface Test {
   id: string;
   title: string;
   description: string;
   published: boolean;
+  // True for the AI-usage experiment test (1차 독립 수행 / 2차 AI 자유 선택).
+  experiment?: boolean;
   questions: Question[];
   createdAt: Timestamp | null;
   createdBy: string;
