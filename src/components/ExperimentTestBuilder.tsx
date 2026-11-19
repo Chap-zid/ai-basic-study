@@ -15,21 +15,26 @@ interface SourceRule {
   matches: (title: string) => boolean;
 }
 
-// Normalizes titles so "계산 문제-1" and "계산 문제 - 1" match the same rule.
+// Normalizes titles for matching: drops a trailing count like "(5문)", then
+// spaces and separators such as "·", so "퍼셉트론·활성화 함수 문제 - 1 (5문)"
+// and "퍼셉트론 활성화 함수 문제-1" compare equal.
 function norm(title: string): string {
-  return title.replace(/\s+/g, "").toLowerCase();
+  return title
+    .replace(/\([^)]*\)\s*$/, "")
+    .replace(/[\s·・,]+/g, "")
+    .toLowerCase();
 }
 
 const SOURCE_RULES: SourceRule[] = [
   {
     difficulty: "하",
-    label: "기초 학습세트 개념 문제 (여러 세트)",
+    label: "인공지능 기초 학습세트 1~5",
     matches: (t) => norm(t).includes("기초학습세트"),
   },
   {
     difficulty: "중",
-    label: "퍼셉트론 활성화 함수 문제 - 1",
-    matches: (t) => norm(t) === norm("퍼셉트론 활성화 함수 문제 - 1"),
+    label: "퍼셉트론·활성화 함수 문제 - 1",
+    matches: (t) => norm(t) === norm("퍼셉트론·활성화 함수 문제 - 1"),
   },
   {
     difficulty: "상",
